@@ -34,6 +34,9 @@ const Form: React.FC = () => {
 
   const [sections, setSections] = useState<SectionType[]>([]);
   const [disabledFields, setDisabledFields] = useState<Set<string>>(new Set());
+  const [checkboxStates, setCheckboxStates] = useState<Record<string, boolean>>(
+    {}
+  );
 
   useEffect(() => {
     if (isLoading) return; // wait until the context is loaded for prepopulation
@@ -81,17 +84,18 @@ const Form: React.FC = () => {
 
   useEffect(() => {
     // handles updating context when the form data changes
-    const subscription = watch(async (values) => {
-      for (const fieldName in values) {
-        const isValid = await trigger(fieldName);
-        setAnswer(fieldName, values[fieldName], isValid);
+    const subscription = watch((values, { name }) => {
+      if (name) {
+        trigger(name).then((isValid) => {
+          setAnswer(name, values[name], isValid);
+        });
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [watch, setAnswer]);
+  }, [watch, setAnswer, trigger]);
 
   const onSubmit: SubmitHandler<FormDataType> = (data) => {
     alert(JSON.stringify(data));
@@ -104,32 +108,27 @@ const Form: React.FC = () => {
       if (isChecked) {
         newSet.add(disableTarget);
         setValue(disableTarget, null, {
-          shouldValidate: true,
+          shouldValidate: false,
           shouldDirty: true,
         });
         unregister(disableTarget);
       } else {
         newSet.delete(disableTarget);
+        clearErrors(disableTarget);
       }
       return newSet;
     });
-    if (isChecked) {
-      clearErrors(disableTarget);
-    }
+
+    setCheckboxStates((prev) => ({
+      ...prev,
+      [disableTarget]: isChecked,
+    }));
   };
 
   // handles rendering form fields based on the field type
   const renderField = (field: FieldType, index: number) => {
-    const {
-      fieldName,
-      label,
-      element,
-      type,
-      options,
-      rules,
-      placeholder,
-      disableTarget,
-    } = field;
+    const { fieldName, label, element, type, options, rules, placeholder } =
+      field;
 
     const error = errors[fieldName] as FieldError | undefined;
     const isDisabled = disabledFields.has(fieldName);
@@ -145,28 +144,37 @@ const Form: React.FC = () => {
 
     if (element === "input") {
       return (
-        <div key={index}>
+        <div key={fieldName}>
           <InputField type={type} {...commonProps} />
-        </div>
-      );
-    }
-
-    if (element === "checkbox" && disableTarget) {
-      return (
-        <div key={index}>
-          <CheckboxField
-            disableField={(checked: boolean) =>
-              handleCheckboxChange(disableTarget, checked)
-            }
-            {...commonProps}
-          />
+          {field.checkbox && (
+            <CheckboxField
+              disableField={(checked: boolean) =>
+                handleCheckboxChange(fieldName, checked)
+              }
+              label={field.checkbox}
+              checked={checkboxStates[fieldName] || false}
+              {...register(fieldName, registerOptions)}
+            />
+          )}
         </div>
       );
     }
 
     if (element === "select") {
       return (
-        <SelectField key={index} options={options || []} {...commonProps} />
+        <div key={fieldName}>
+          <SelectField key={index} options={options || []} {...commonProps} />
+          {field.checkbox && (
+            <CheckboxField
+              disableField={(checked: boolean) =>
+                handleCheckboxChange(fieldName, checked)
+              }
+              label={field.checkbox}
+              checked={checkboxStates[fieldName] || false}
+              {...register(fieldName, registerOptions)}
+            />
+          )}
+        </div>
       );
     }
   };
@@ -190,11 +198,10 @@ const Form: React.FC = () => {
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="space-y-6 p-6 bg-gray-100 rounded-lg"
+        className="w-[500px] min-w-[300px] space-y-6 p-6 bg-gray-100 rounded-lg"
       >
         {sections.length > 0 && (
           <div className="space-y-2">
-            <h2>{sections[currentSection].sectionName}</h2>
             {sections[currentSection].fields.map((field, index) =>
               renderField(field, index)
             )}

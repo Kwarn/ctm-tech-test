@@ -1,36 +1,44 @@
-type Step = {
-  title: string;
-};
-
-type Section = {
-  steps: Step[];
-  currentStep: number;
-  title: string;
-};
+import { AnswerType, ProgressTrackerSectionType } from "../state/FormContext";
 
 type ProgressTrackerProps = {
-  sections: Section[];
+  sections: ProgressTrackerSectionType[];
   currentSection: number;
-  currentStep: number;
+  isLoading: boolean;
+  answers: AnswerType[];
 };
 
 const ProgressTracker = ({
   sections,
-  currentStep,
+  answers,
   currentSection,
 }: ProgressTrackerProps) => {
   return (
-    <div className="mb-4">
-      <div className="flex items-center space-x-2">
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col rounded-sm">
         {sections.map((section, index) => (
-            <div key={index} className="flex items-center space-x-2">
-                <div
-                className={`h-2 w-2 rounded-full ${
-                    currentSection === index ? "bg-primary" : "bg-gray-300"
-                }`}
-                ></div>
-                <p>{section.title}</p>
+          <div key={section.sectionName}>
+            <div
+              className={`flex ${currentSection === index ? "font-bold" : ""}`}
+            >
+              <span className="text-primary">{section.sectionName}</span>
             </div>
+            <div>
+              {section.questions.map((question) => (
+                <div
+                  key={question.name}
+                  className="flex justify-between ml-3 p-2"
+                >
+                  <span>{question.label}</span>
+                  <span className="ml-3">
+                    {answers.find((answer) => answer.name === question.name)
+                      ?.isValid
+                      ? "✅"
+                      : "❌"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     </div>

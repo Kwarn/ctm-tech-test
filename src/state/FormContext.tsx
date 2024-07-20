@@ -6,18 +6,18 @@ import React, {
   ReactNode,
 } from "react";
 
-interface AnswerType {
+export interface AnswerType {
   name: string;
   value: any; // TODO: replace with a more specific type if possible
   isValid: boolean;
 }
 
-type QuestionType = {
+export type QuestionType = {
   name: string;
   label: string;
 };
 
-type ProgressTrackerSectionType = {
+export type ProgressTrackerSectionType = {
   sectionName: string;
   questions: QuestionType[];
 };

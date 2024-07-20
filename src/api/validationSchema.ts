@@ -6,7 +6,7 @@ export const fieldSchema = z.object({
   element: z.string(),
   type: z.string().optional(),
   placeholder: z.string().optional(),
-  disableTarget: z.string().optional(),
+  checkbox: z.string().optional(),
   options: z
     .array(
       z.object({

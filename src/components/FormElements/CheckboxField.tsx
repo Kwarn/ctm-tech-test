@@ -3,6 +3,7 @@ import { FieldError, UseFormRegisterReturn } from "react-hook-form";
 
 interface CheckboxFieldProps {
   label: string;
+  checked?: boolean;
   error?: FieldError;
   disableField?: (checked: boolean) => void;
 }
@@ -10,7 +11,7 @@ interface CheckboxFieldProps {
 const CheckboxField = forwardRef<
   HTMLInputElement,
   CheckboxFieldProps & UseFormRegisterReturn
->(({ name, label, error, onChange, onBlur, disableField }, ref) => {
+>(({ name, label, checked, error, onChange, onBlur, disableField }, ref) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onChange) onChange(e);
     if (disableField) disableField(e.target.checked);
@@ -25,6 +26,7 @@ const CheckboxField = forwardRef<
           type="checkbox"
           onBlur={onBlur}
           onChange={handleChange}
+          checked={checked}
         />
         {label}
       </label>

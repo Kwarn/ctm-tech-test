@@ -2,36 +2,22 @@
   "data": {
     "sections": [
       {
-        "sectionName": "About You",
+        "sectionName": "About Your Vehicle",
         "fields": [
           {
-            "label": "What is your name?",
-            "fieldName": "name",
+            "label": "What is the registration number of the vehicle?",
+            "fieldName": "vehicleRegistration",
             "element": "input",
             "type": "text",
-            "placeholder": "e.g John Smith",
+            "placeholder": "e.g ABC123",
             "rules": {
-              "required": "Name is required",
+              "required": "The vehicles registration number is required",
               "minLength": {
-                "value": 2,
-                "message": "Name must be at least 2 characters long"
+                "value": 3,
+                "message": "Registration number must be at least 3 characters long"
               }
             }
           },
-          {
-            "label": "What is your date of birth?",
-            "fieldName": "dob",
-            "element": "input",
-            "type": "date",
-            "rules": {
-              "required": "DOB is required"
-            }
-          }
-        ]
-      },
-      {
-        "sectionName": "About Your Vehicle",
-        "fields": [
           {
             "label": "What kind of vehicle do you drive?",
             "fieldName": "vehicleType",
@@ -63,13 +49,8 @@
             "type": "date",
             "rules": {
               "required": "Purchase date is required"
-            }
-          },
-          {
-            "label": "I do not own the vehicle yet",
-            "fieldName": "isVehicleOwned",
-            "element": "checkbox",
-            "disableTarget": "vehiclePurchaseDate"
+            },
+            "checkbox": "I do not own the vehicle yet"
           },
           {
             "label": "What is the value of the vehicle?",
@@ -81,19 +62,33 @@
             "rules": {
               "required": "The vehicles value is required"
             }
-          },
+          }
+        ]
+      },
+      {
+        "sectionName": "About You",
+        "fields": [
           {
-            "label": "What is the registration number of the vehicle?",
-            "fieldName": "vehicleRegistration",
+            "label": "What is your name?",
+            "fieldName": "name",
             "element": "input",
             "type": "text",
-            "placeholder": "e.g ABC123",
+            "placeholder": "e.g John Smith",
             "rules": {
-              "required": "The vehicles registration number is required",
+              "required": "Name is required",
               "minLength": {
-                "value": 3,
-                "message": "Registration number must be at least 3 characters long"
+                "value": 2,
+                "message": "Name must be at least 2 characters long"
               }
+            }
+          },
+          {
+            "label": "What is your date of birth?",
+            "fieldName": "dob",
+            "element": "input",
+            "type": "date",
+            "rules": {
+              "required": "DOB is required"
             }
           }
         ]

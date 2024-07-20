@@ -14,7 +14,7 @@ export type FieldType = {
   options?: OptionType[];
   icon?: string;
   rules?: RegisterOptions;
-  disableTarget?: string;
+  checkbox?: string;
 };
 
 export type FormDataType = {
