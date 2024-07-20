@@ -1,35 +1,27 @@
 import { RegisterOptions } from "react-hook-form/dist/types";
 
+type OptionType = {
+  value: string;
+  label: string;
+};
+
 export type FieldType = {
+  label: string;
+  fieldName: string;
   element: string;
-  type: string;
+  type?: string;
   placeholder?: string;
-  options?: { value: string; label: string }[];
+  options?: OptionType[];
   icon?: string;
   rules?: RegisterOptions;
+  disableTarget?: string;
 };
 
-export type QuestionType = {
-  id: number;
-  title: string;
+export type FormDataType = {
+  [key: string]: any;
+};
+
+export type SectionType = {
+  sectionName: string;
   fields: FieldType[];
-  childQuestions?: number[];
 };
-
-export type ApiMockType = {
-  questions: {
-    personal: QuestionType[];
-    vehicle: QuestionType[];
-  };
-};
-
-export type Rules = {};
-
-interface GetQuestionsResponse {
-  data: {
-    questions: {
-      personal?: QuestionType[];
-      vechile?: QuestionType[];
-    };
-  };
-}

@@ -1,160 +1,236 @@
 import React, { useEffect, useState } from "react";
 import { useForm, SubmitHandler, FieldError } from "react-hook-form";
-
-import { QuestionType } from "../types";
+import { FieldType, FormDataType, SectionType } from "../types";
 import { apiResponseSchema } from "../api/validationSchema";
-
-type FormDataType = {
-  [key: string]: any;
-};
+import InputField from "./FormElements/InputField";
+import SelectField from "./FormElements/SelectField";
+import CheckboxField from "./FormElements/CheckboxField";
+import { useFormContext } from "../state/FormContext";
 
 const Form: React.FC = () => {
+  const {
+    isLoading,
+    currentSection,
+    answers,
+    setAnswer,
+    setCurrentSection,
+    setProgressTrackerSections,
+  } = useFormContext();
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormDataType>();
-  const [vehicleQuestions, setVehicleQuestions] = useState<QuestionType[]>([]);
-  const [personalQuestions, setPersonalQuestions] = useState<QuestionType[]>(
-    []
-  );
+    trigger,
+    clearErrors,
+    setValue,
+    unregister,
+    watch,
+    reset,
+  } = useForm<FormDataType>({
+    mode: "onBlur",
+    reValidateMode: "onChange",
+  });
+
+  const [sections, setSections] = useState<SectionType[]>([]);
+  const [disabledFields, setDisabledFields] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (isLoading) return; // wait until the context is loaded for prepopulation
+
     const fetchFormQuestions = async () => {
       try {
         const response = await fetch("/mock/api.json");
         if (!response.ok) {
-          throw new Error("Network response was not ok");
+          throw new Error("Failed to fetch the form");
         }
         const data = await response.json();
         const parsedData = apiResponseSchema.parse(data);
 
-        const personal = parsedData.data.questions.personal || [];
-        const vehicle = parsedData.data.questions.vehicle || [];
+        const sections = parsedData.data.sections;
 
-        if (!personal.length || !vehicle.length) {
+        if (!sections.length) {
           throw new Error("Questions not found");
         }
 
-        setPersonalQuestions(personal);
-        setVehicleQuestions(vehicle);
+        setSections(sections);
+
+        setProgressTrackerSections(
+          sections.map((section) => ({
+            sectionName: section.sectionName,
+            questions: section.fields.map((field) => ({
+              name: field.fieldName,
+              label: field.label,
+            })),
+          }))
+        );
+
+        const prepopulateValues: Record<string, any> = {};
+        answers.forEach(({ name, value }) => {
+          prepopulateValues[name] = value;
+        });
+
+        reset(prepopulateValues);
       } catch (error) {
         console.error("Error fetching questions:", error);
       }
     };
+
     fetchFormQuestions();
-  }, []);
+  }, [isLoading]);
+
+  useEffect(() => {
+    // handles updating context when the form data changes
+    const subscription = watch(async (values) => {
+      for (const fieldName in values) {
+        const isValid = await trigger(fieldName);
+        setAnswer(fieldName, values[fieldName], isValid);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [watch, setAnswer]);
 
   const onSubmit: SubmitHandler<FormDataType> = (data) => {
-    console.log(data);
+    alert(JSON.stringify(data));
+  };
+
+  // handles disabling fields based on checkbox state
+  const handleCheckboxChange = (disableTarget: string, isChecked: boolean) => {
+    setDisabledFields((prev) => {
+      const newSet = new Set(prev);
+      if (isChecked) {
+        newSet.add(disableTarget);
+        setValue(disableTarget, null, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+        unregister(disableTarget);
+      } else {
+        newSet.delete(disableTarget);
+      }
+      return newSet;
+    });
+    if (isChecked) {
+      clearErrors(disableTarget);
+    }
+  };
+
+  // handles rendering form fields based on the field type
+  const renderField = (field: FieldType, index: number) => {
+    const {
+      fieldName,
+      label,
+      element,
+      type,
+      options,
+      rules,
+      placeholder,
+      disableTarget,
+    } = field;
+
+    const error = errors[fieldName] as FieldError | undefined;
+    const isDisabled = disabledFields.has(fieldName);
+    const registerOptions = !isDisabled ? rules ?? {} : {};
+
+    const commonProps = {
+      label,
+      error,
+      disabled: isDisabled,
+      placeholder: placeholder ?? "",
+      ...register(fieldName, registerOptions),
+    };
+
+    if (element === "input") {
+      return (
+        <div key={index}>
+          <InputField type={type} {...commonProps} />
+        </div>
+      );
+    }
+
+    if (element === "checkbox" && disableTarget) {
+      return (
+        <div key={index}>
+          <CheckboxField
+            disableField={(checked: boolean) =>
+              handleCheckboxChange(disableTarget, checked)
+            }
+            {...commonProps}
+          />
+        </div>
+      );
+    }
+
+    if (element === "select") {
+      return (
+        <SelectField key={index} options={options || []} {...commonProps} />
+      );
+    }
+  };
+
+  const handleNextButton = async (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    event.preventDefault();
+    const isSectionComplete = await trigger();
+    if (isSectionComplete) {
+      setCurrentSection(currentSection + 1);
+    }
+  };
+
+  const handlePreviousButton = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    setCurrentSection(currentSection - 1);
   };
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-6 p-6 bg-gray-100 rounded-lg"
-    >
-      {personalQuestions.map((question) => (
-        <div key={question.id} className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {question.title}
-          </label>
-          {question.fields.map((field, index) => {
-            const fieldName = `personal_${question.id}_${index}`;
-            const registerOptions = field.rules || {};
-            const error = errors[fieldName] as FieldError | undefined;
-            return (
-              <div key={index} className="space-y-1">
-                {field.element === "input" && (
-                  <>
-                    <input
-                      type={field.type}
-                      placeholder={field.placeholder}
-                      {...register(fieldName, registerOptions)}
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                    {error && (
-                      <p className="text-red-500 text-sm">{error.message}</p>
-                    )}
-                  </>
-                )}
-                {field.element === "select" && (
-                  <>
-                    <select
-                      {...register(fieldName, registerOptions)}
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    >
-                      <option value="">{field.placeholder}</option>
-                      {field.options?.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {error && (
-                      <p className="text-red-500 text-sm">{error.message}</p>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ))}
-      {vehicleQuestions.map((question) => (
-        <div key={question.id} className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            {question.title}
-          </label>
-          {question.fields.map((field, index) => {
-            const fieldName = `vehicle_${question.id}_${index}`;
-            const registerOptions = field.rules || {};
-            const error = errors[fieldName] as FieldError | undefined;
-            return (
-              <div key={index} className="space-y-1">
-                {field.element === "input" && (
-                  <>
-                    <input
-                      type={field.type}
-                      placeholder={field.placeholder}
-                      {...register(fieldName, registerOptions)}
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    />
-                    {error && (
-                      <p className="text-red-500 text-sm">{error.message}</p>
-                    )}
-                  </>
-                )}
-                {field.element === "select" && (
-                  <>
-                    <select
-                      {...register(fieldName, registerOptions)}
-                      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                    >
-                      <option value="">{field.placeholder}</option>
-                      {field.options?.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    {error && (
-                      <p className="text-red-500 text-sm">{error.message}</p>
-                    )}
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ))}
-      <button
-        type="submit"
-        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+    <>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-6 p-6 bg-gray-100 rounded-lg"
       >
-        Submit
-      </button>
-    </form>
+        {sections.length > 0 && (
+          <div className="space-y-2">
+            <h2>{sections[currentSection].sectionName}</h2>
+            {sections[currentSection].fields.map((field, index) =>
+              renderField(field, index)
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-between">
+          {currentSection > 0 && (
+            <button
+              type="button"
+              onClick={handlePreviousButton}
+              className="rounded-[2rem] text-white bg-gray-500 b-ra inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Previous
+            </button>
+          )}
+
+          {currentSection < sections.length - 1 ? (
+            <button
+              type="button"
+              onClick={handleNextButton}
+              className="rounded-[2rem] text-white bg-primary b-ra inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium hover:bg-primaryHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              type="submit"
+              className="rounded-[2rem] text-white bg-primary b-ra inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium hover:bg-primaryHover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Submit
+            </button>
+          )}
+        </div>
+      </form>
+    </>
   );
 };
 

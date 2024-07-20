@@ -1,115 +1,103 @@
 {
   "data": {
-    "questions": {
-      "personal": [
-        {
-          "id": 132,
-          "title": "What is your name?",
-          "fields": [
-            {
-              "element": "input",
-              "type": "text",
-              "placeholder": "e.g John Smith",
-              "rules": {
-                "required": "Name is required",
-                "minLength": {
-                  "value": 2,
-                  "message": "Name must be at least 2 characters long"
-                }
+    "sections": [
+      {
+        "sectionName": "About You",
+        "fields": [
+          {
+            "label": "What is your name?",
+            "fieldName": "name",
+            "element": "input",
+            "type": "text",
+            "placeholder": "e.g John Smith",
+            "rules": {
+              "required": "Name is required",
+              "minLength": {
+                "value": 2,
+                "message": "Name must be at least 2 characters long"
               }
             }
-          ]
-        },
-        {
-          "id": 212,
-          "title": "What is your date of birth?",
-          "fields": [
-            {
-              "element": "input",
-              "type": "date",
-              "rules": {
-                "required": "DOB is required"
+          },
+          {
+            "label": "What is your date of birth?",
+            "fieldName": "dob",
+            "element": "input",
+            "type": "date",
+            "rules": {
+              "required": "DOB is required"
+            }
+          }
+        ]
+      },
+      {
+        "sectionName": "About Your Vehicle",
+        "fields": [
+          {
+            "label": "What kind of vehicle do you drive?",
+            "fieldName": "vehicleType",
+            "element": "select",
+            "type": "dropdown",
+            "placeholder": "Select a vehicle type",
+            "options": [
+              {
+                "label": "Van",
+                "value": "van"
+              },
+              {
+                "label": "Car",
+                "value": "car"
+              },
+              {
+                "label": "Bike",
+                "value": "bike"
+              }
+            ],
+            "rules": {
+              "required": "Your vehicle type is required"
+            }
+          },
+          {
+            "label": "When did you purchase the vehicle?",
+            "fieldName": "vehiclePurchaseDate",
+            "element": "input",
+            "type": "date",
+            "rules": {
+              "required": "Purchase date is required"
+            }
+          },
+          {
+            "label": "I do not own the vehicle yet",
+            "fieldName": "isVehicleOwned",
+            "element": "checkbox",
+            "disableTarget": "vehiclePurchaseDate"
+          },
+          {
+            "label": "What is the value of the vehicle?",
+            "fieldName": "vehicleValue",
+            "icon": "£",
+            "element": "input",
+            "type": "number",
+            "placeholder": "e.g 10000",
+            "rules": {
+              "required": "The vehicles value is required"
+            }
+          },
+          {
+            "label": "What is the registration number of the vehicle?",
+            "fieldName": "vehicleRegistration",
+            "element": "input",
+            "type": "text",
+            "placeholder": "e.g ABC123",
+            "rules": {
+              "required": "The vehicles registration number is required",
+              "minLength": {
+                "value": 3,
+                "message": "Registration number must be at least 3 characters long"
               }
             }
-          ]
-        }
-      ],
-      "vehicle": [
-        {
-          "id": 343,
-          "title": "What kind of vehicle do you drive?",
-          "fields": [
-            {
-              "element": "select",
-              "type": "dropdown",
-              "placeholder": "Select a vehicle type",
-              "options": [
-                {
-                  "label": "Van",
-                  "value": "van"
-                },
-                {
-                  "label": "Car",
-                  "value": "car"
-                },
-                {
-                  "label": "Bike",
-                  "value": "bike"
-                }
-              ],
-              "rules": {
-                "required": "Your Vecicle type is required"
-              }
-            }
-          ]
-        },
-        {
-          "id": 454,
-          "title": "When did you purchase the vehicle?",
-          "fields": [
-            {
-              "element": "input",
-              "type": "date",
-              "rules": {
-                "required": "Purchase date is required"
-              }
-            }
-          ]
-        },
-        {
-          "id": 565,
-          "title": "What is the value of the vehicle?",
-          "fields": [
-            {
-              "icon": "£",
-              "element": "input",
-              "type": "number",
-              "placeholder": "e.g 10000",
-              "rules": {
-                "required": "The vehicles value is required"
-              }
-            }
-          ]
-        },
-        {
-          "id": 676,
-          "title": "What is the registration number of the vehicle?",
-          "fields": [
-            {
-              "element": "input",
-              "type": "text",
-              "placeholder": "e.g ABC123",
-              "rules": {
-                "required": "The vehicles registration number is required",
-                "minLength": {
-                  "value": 3,
-                  "message": "Registration number must be at least 3 characters long"
-                }
-              }
-            }
-          ]
-        }
-      ]
-    }
+          }
+        ]
+      }
+    ]
   }
 }
