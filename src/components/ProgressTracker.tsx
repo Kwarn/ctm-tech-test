@@ -30,32 +30,30 @@ const ProgressTracker = ({
         <div className="flex flex-row rounded-sm">
           {smallScreenSteps.map((step) => (
             <span
+              role="presentation"
               key={`question-indicator-${step.name}`}
               className={`flex w-full p-2 border border-gray-200 ${
                 step.isValid ? "bg-green-500" : "bg-white"
               }`}
-            >
-            </span>
+            ></span>
           ))}
         </div>
       ) : (
         <div className="flex flex-col rounded-sm">
           {sections.map((section, index) => (
             <div key={section.sectionName}>
-              <div
-                className={`flex ${
+              <span
+                className={`text-primary ${
                   currentSection === index ? "font-bold" : ""
                 }`}
               >
-                <span className="text-primary">{section.sectionName}</span>
-              </div>
+                {section.sectionName}
+              </span>
+
               <div>
                 {section.questions.map((question) => (
-                  <div
-                    key={question.name}
-                    className="flex ml-3 p-2"
-                  >
-                    <span className="mr-3">
+                  <div key={question.name} className="flex ml-3 p-2">
+                    <span className="mr-3" role="presentation">
                       {answers.find((answer) => answer.name === question.name)
                         ?.isValid
                         ? "✅"

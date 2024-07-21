@@ -11,7 +11,7 @@ const Home = () => {
 
   return (
     <div className="h-full flex justify-center">
-      <div className="w-full flex flex-col justify-center mt-20 md:flex-row lg:flex-row">
+      <div className="w-full flex flex-col justify-center md:mt-20 md:flex-row lg:flex-row">
         {isSmallScreen && (
           <ProgressTracker
             isLoading={isLoading}
