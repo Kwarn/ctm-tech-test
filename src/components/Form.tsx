@@ -114,16 +114,6 @@ const Form: React.FC = () => {
     };
   }, [watch, setAnswer, trigger]);
 
-  useEffect(() => {
-    // Effect to handle updates when `disabledFields` change
-    disabledFields.forEach((fieldName) => {
-      setValue(fieldName, "", {
-        shouldValidate: false,
-        shouldDirty: true,
-      });
-      clearErrors(fieldName);
-    });
-  }, [disabledFields, setValue, clearErrors]);
 
   // handles rendering form fields based on the field type
   const renderField = (field: FieldType, index: number) => {
