@@ -13,7 +13,7 @@ const ProgressTracker = ({
   currentSection,
 }: ProgressTrackerProps) => {
   return (
-    <div className="space-y-6 p-6">
+    <div className="w-[400px] min-w-[300px] space-y-6 p-6">
       <div className="flex flex-col rounded-sm">
         {sections.map((section, index) => (
           <div key={section.sectionName}>
@@ -26,15 +26,15 @@ const ProgressTracker = ({
               {section.questions.map((question) => (
                 <div
                   key={question.name}
-                  className="flex justify-between ml-3 p-2"
+                  className="flex ml-3 p-2"
                 >
-                  <span>{question.label}</span>
-                  <span className="ml-3">
+                  <span className="mr-3">
                     {answers.find((answer) => answer.name === question.name)
                       ?.isValid
                       ? "✅"
                       : "❌"}
                   </span>
+                  <span>{question.label}</span>
                 </div>
               ))}
             </div>

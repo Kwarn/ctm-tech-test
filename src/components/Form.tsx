@@ -63,7 +63,7 @@ const Form: React.FC = () => {
             sectionName: section.sectionName,
             questions: section.fields.map((field) => ({
               name: field.fieldName,
-              label: field.label,
+              label: field.progressBarLabel,
             })),
           }))
         );
@@ -97,34 +97,6 @@ const Form: React.FC = () => {
     };
   }, [watch, setAnswer, trigger]);
 
-  const onSubmit: SubmitHandler<FormDataType> = (data) => {
-    alert(JSON.stringify(data));
-  };
-
-  // handles disabling fields based on checkbox state
-  const handleCheckboxChange = (disableTarget: string, isChecked: boolean) => {
-    setDisabledFields((prev) => {
-      const newSet = new Set(prev);
-      if (isChecked) {
-        newSet.add(disableTarget);
-        setValue(disableTarget, null, {
-          shouldValidate: false,
-          shouldDirty: true,
-        });
-        unregister(disableTarget);
-      } else {
-        newSet.delete(disableTarget);
-        clearErrors(disableTarget);
-      }
-      return newSet;
-    });
-
-    setCheckboxStates((prev) => ({
-      ...prev,
-      [disableTarget]: isChecked,
-    }));
-  };
-
   // handles rendering form fields based on the field type
   const renderField = (field: FieldType, index: number) => {
     const { fieldName, label, element, type, options, rules, placeholder } =
@@ -132,7 +104,7 @@ const Form: React.FC = () => {
 
     const error = errors[fieldName] as FieldError | undefined;
     const isDisabled = disabledFields.has(fieldName);
-    const registerOptions = !isDisabled ? rules ?? {} : {};
+    const registerOptions = !isDisabled ? rules ?? {} : {}; // dont apply rules if field is disabled
 
     const commonProps = {
       label,
@@ -179,6 +151,60 @@ const Form: React.FC = () => {
     }
   };
 
+  // handles disabling fields based on checkbox state
+  const handleCheckboxChange = (disableTarget: string, isChecked: boolean) => {
+    setDisabledFields((prev) => {
+      const newSet = new Set(prev);
+      if (isChecked) {
+        newSet.add(disableTarget);
+        setValue(disableTarget, null, {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+        unregister(disableTarget);
+      } else {
+        newSet.delete(disableTarget);
+        const fieldRules =
+          sections[currentSection].fields.find(
+            (field) => field.fieldName === disableTarget
+          )?.rules || {};
+        register(disableTarget, fieldRules);
+        setValue(disableTarget, "");
+        clearErrors(disableTarget);
+        console.log("answers", answers);
+      }
+      return newSet;
+    });
+
+    setCheckboxStates((prev) => ({
+      ...prev,
+      [disableTarget]: isChecked,
+    }));
+  };
+
+  // handles resetting fields in the current section - mostly for dev/demo purposes to avoid having to manually clear state
+  const handleResetButton = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    const currentSectionFields = sections[currentSection].fields.map(
+      (field) => field.fieldName
+    );
+
+    const defaultValues: Partial<FormDataType> = {};
+    currentSectionFields.forEach((field) => {
+      defaultValues[field] = "";
+    });
+
+    reset(defaultValues, {
+      keepErrors: false,
+      keepDirty: true,
+      keepValues: false,
+    });
+
+    for (const field of currentSectionFields) {
+      setAnswer(field, "", false);
+    }
+  };
+
   const handleNextButton = async (
     event: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -194,14 +220,39 @@ const Form: React.FC = () => {
     setCurrentSection(currentSection - 1);
   };
 
+  const onSubmit: SubmitHandler<FormDataType> = (data) => {
+    alert(JSON.stringify(data));
+
+    const fieldNames: string[] = [];
+
+    const defaultValues: Partial<FormDataType> = {};
+    sections.forEach((section) =>
+      section.fields.forEach((field) => {
+        defaultValues[field.fieldName] = "";
+        fieldNames.push(field.fieldName);
+      })
+    );
+    reset(defaultValues, {
+      keepErrors: false,
+      keepDirty: true,
+      keepValues: false,
+    });
+
+    for (const fieldName of fieldNames) {
+      setAnswer(fieldName, "", false);
+    }
+
+    setCurrentSection(0); // reset to the first section - mostly for dev/demo purposes
+  };
+
   return (
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-[500px] min-w-[300px] space-y-6 p-6 bg-gray-100 rounded-lg"
+        className="w-[400px] min-w-[300px] min-h-[420px] space-y-6 p-6 rounded-lg flex flex-col justify-between"
       >
         {sections.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-6">
             {sections[currentSection].fields.map((field, index) =>
               renderField(field, index)
             )}
@@ -218,6 +269,14 @@ const Form: React.FC = () => {
               Previous
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={handleResetButton}
+            className="rounded-[2rem] text-white bg-gray-500 b-ra inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Reset
+          </button>
 
           {currentSection < sections.length - 1 ? (
             <button

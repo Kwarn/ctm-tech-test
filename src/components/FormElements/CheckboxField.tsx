@@ -27,6 +27,7 @@ const CheckboxField = forwardRef<
           onBlur={onBlur}
           onChange={handleChange}
           checked={checked}
+          className="mr-2"
         />
         {label}
       </label>

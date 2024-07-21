@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const fieldSchema = z.object({
   label: z.string(),
+  progressBarLabel: z.string(),
   fieldName: z.string(),
   element: z.string(),
   type: z.string().optional(),

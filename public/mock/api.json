@@ -5,7 +5,8 @@
         "sectionName": "About Your Vehicle",
         "fields": [
           {
-            "label": "What is the registration number of the vehicle?",
+            "label": "What’s your car’s registration?",
+            "progressBarLabel": "Vehicle Registration",
             "fieldName": "vehicleRegistration",
             "element": "input",
             "type": "text",
@@ -20,6 +21,7 @@
           },
           {
             "label": "What kind of vehicle do you drive?",
+            "progressBarLabel": "Vehicle type",
             "fieldName": "vehicleType",
             "element": "select",
             "type": "dropdown",
@@ -44,6 +46,7 @@
           },
           {
             "label": "When did you purchase the vehicle?",
+            "progressBarLabel": "Purchase date",
             "fieldName": "vehiclePurchaseDate",
             "element": "input",
             "type": "date",
@@ -54,6 +57,7 @@
           },
           {
             "label": "What is the value of the vehicle?",
+            "progressBarLabel": "Vehicle value",
             "fieldName": "vehicleValue",
             "icon": "£",
             "element": "input",
@@ -70,6 +74,7 @@
         "fields": [
           {
             "label": "What is your name?",
+            "progressBarLabel": "Name",
             "fieldName": "name",
             "element": "input",
             "type": "text",
@@ -84,6 +89,7 @@
           },
           {
             "label": "What is your date of birth?",
+            "progressBarLabel": "Date of birth",
             "fieldName": "dob",
             "element": "input",
             "type": "date",

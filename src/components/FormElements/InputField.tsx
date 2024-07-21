@@ -30,7 +30,7 @@ const InputField = forwardRef<
     ref
   ) => (
     <div>
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
+      <label className="block text-sm font-medium text-primary">{label}</label>
       <p>{icon}</p>
       <input
         disabled={disabled}

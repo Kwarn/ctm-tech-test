@@ -7,6 +7,7 @@ type OptionType = {
 
 export type FieldType = {
   label: string;
+  progressBarLabel: string;
   fieldName: string;
   element: string;
   type?: string;
