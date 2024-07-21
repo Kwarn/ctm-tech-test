@@ -29,7 +29,7 @@ const SelectField = forwardRef<
       onBlur={onBlur}
       onChange={onChange}
       disabled={disabled}
-      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+      className="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
     >
       <option value="">{placeholder}</option>
       {options.map((option) => (

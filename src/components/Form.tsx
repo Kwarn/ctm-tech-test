@@ -41,7 +41,7 @@ const Form: React.FC = () => {
   useEffect(() => {
     if (isLoading) return; // wait until the context is loaded for prepopulation
 
-    const fetchFormQuestions = async () => {
+    const initializeForm = async () => {
       try {
         const response = await fetch("/mock/api.json");
         if (!response.ok) {
@@ -79,14 +79,31 @@ const Form: React.FC = () => {
       }
     };
 
-    fetchFormQuestions();
+    initializeForm();
   }, [isLoading]);
 
   useEffect(() => {
-    // handles updating context when the form data changes
     const subscription = watch((values, { name }) => {
       if (name) {
         trigger(name).then((isValid) => {
+          /* 
+          this is triggered each time a form field value changes, it keeps the answers in context up to date
+          a side effect of this is its also triggered when we disable a field because we force the value to be an empty string
+
+          this validation check of an empty string causes isValid to be false when we want it to be true
+          we want it to be valid so the form can be submitted, the ProgressTracker updates and we have the correct payload (empty strings for disabled fields) - BE would handle this in theory
+          we need to check if the field is present in disabledFields and override isValid to true - however disabledFields is not ready in time so we need to delay this check
+
+          I'm aware this is a bit hacky, this is my first time using react-hook-form so I could be missing something.
+          I'm going to timebox this one to avoid a large refactor and delaying submitting of the test :)
+
+          We can discuss possible solutions/alternatives in the review?
+          */
+          setTimeout(() => {
+            if (disabledFields.has(name)) {
+              isValid = true;
+            }
+          }, 10);
           setAnswer(name, values[name], isValid);
         });
       }
@@ -96,6 +113,17 @@ const Form: React.FC = () => {
       subscription.unsubscribe();
     };
   }, [watch, setAnswer, trigger]);
+
+  useEffect(() => {
+    // Effect to handle updates when `disabledFields` change
+    disabledFields.forEach((fieldName) => {
+      setValue(fieldName, "", {
+        shouldValidate: false,
+        shouldDirty: true,
+      });
+      clearErrors(fieldName);
+    });
+  }, [disabledFields, setValue, clearErrors]);
 
   // handles rendering form fields based on the field type
   const renderField = (field: FieldType, index: number) => {
@@ -116,7 +144,7 @@ const Form: React.FC = () => {
 
     if (element === "input") {
       return (
-        <div key={fieldName}>
+        <div key={`${fieldName}-${type}-input`}>
           <InputField type={type} {...commonProps} />
           {field.checkbox && (
             <CheckboxField
@@ -134,8 +162,8 @@ const Form: React.FC = () => {
 
     if (element === "select") {
       return (
-        <div key={fieldName}>
-          <SelectField key={index} options={options || []} {...commonProps} />
+        <div key={`${fieldName}-select-menu`}>
+          <SelectField options={options || []} {...commonProps} />
           {field.checkbox && (
             <CheckboxField
               disableField={(checked: boolean) =>
@@ -151,57 +179,54 @@ const Form: React.FC = () => {
     }
   };
 
-  // handles disabling fields based on checkbox state
-  const handleCheckboxChange = (disableTarget: string, isChecked: boolean) => {
-    setDisabledFields((prev) => {
-      const newSet = new Set(prev);
-      if (isChecked) {
-        newSet.add(disableTarget);
-        setValue(disableTarget, null, {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-        unregister(disableTarget);
-      } else {
-        newSet.delete(disableTarget);
-        const fieldRules =
-          sections[currentSection].fields.find(
-            (field) => field.fieldName === disableTarget
-          )?.rules || {};
-        register(disableTarget, fieldRules);
-        setValue(disableTarget, "");
-        clearErrors(disableTarget);
-        console.log("answers", answers);
-      }
-      return newSet;
-    });
-
+  // checkboxes control the disabled state of their respective fields
+  // this function handles disabling/enabling fields based on the checkbox state
+  const handleCheckboxChange = async (
+    disableTarget: string,
+    isChecked: boolean
+  ) => {
     setCheckboxStates((prev) => ({
       ...prev,
       [disableTarget]: isChecked,
     }));
+
+    setDisabledFields((prev) => {
+      const newSet = new Set(prev);
+      if (isChecked) {
+        newSet.add(disableTarget);
+
+        unregister(disableTarget);
+        setValue(disableTarget, "", {
+          shouldValidate: false,
+          shouldDirty: true,
+        });
+        clearErrors(disableTarget);
+      } else {
+        newSet.delete(disableTarget);
+
+        setValue(disableTarget, "", {
+          shouldValidate: true,
+          shouldDirty: true,
+        });
+        clearErrors(disableTarget);
+      }
+      return newSet;
+    });
   };
 
-  // handles resetting fields in the current section - mostly for dev/demo purposes to avoid having to manually clear state
   const handleResetButton = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
+
+    // Collect the field names from the current section
     const currentSectionFields = sections[currentSection].fields.map(
       (field) => field.fieldName
     );
 
-    const defaultValues: Partial<FormDataType> = {};
-    currentSectionFields.forEach((field) => {
-      defaultValues[field] = "";
-    });
+    setDisabledFields(new Set());
+    setCheckboxStates({});
 
-    reset(defaultValues, {
-      keepErrors: false,
-      keepDirty: true,
-      keepValues: false,
-    });
-
-    for (const field of currentSectionFields) {
-      setAnswer(field, "", false);
+    for (const fieldName of currentSectionFields) {
+      setValue(fieldName, "");
     }
   };
 
@@ -223,6 +248,9 @@ const Form: React.FC = () => {
   const onSubmit: SubmitHandler<FormDataType> = (data) => {
     alert(JSON.stringify(data));
 
+    // we would post the data to an API here in a try/catch aync/await block
+    // I'm just resetting the form for demo purposes
+
     const fieldNames: string[] = [];
 
     const defaultValues: Partial<FormDataType> = {};
@@ -242,14 +270,14 @@ const Form: React.FC = () => {
       setAnswer(fieldName, "", false);
     }
 
-    setCurrentSection(0); // reset to the first section - mostly for dev/demo purposes
+    setCurrentSection(0);
   };
 
   return (
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="w-[400px] min-w-[300px] min-h-[420px] space-y-6 p-6 rounded-lg flex flex-col justify-between"
+        className="w-full md:w-[400px] min-h-[420px] space-y-6 p-6 rounded-lg flex flex-col justify-between"
       >
         {sections.length > 0 && (
           <div className="space-y-6">
