@@ -4,7 +4,6 @@ import { FieldType, FormDataType, SectionType } from "../types";
 import { apiResponseSchema } from "../api/validationSchema";
 import InputField from "./FormElements/InputField";
 import SelectField from "./FormElements/SelectField";
-import CheckboxField from "./FormElements/CheckboxField";
 import { useFormContext } from "../state/FormContext";
 
 const Form: React.FC = () => {
@@ -34,9 +33,6 @@ const Form: React.FC = () => {
 
   const [sections, setSections] = useState<SectionType[]>([]);
   const [disabledFields, setDisabledFields] = useState<Set<string>>(new Set());
-  const [checkboxStates, setCheckboxStates] = useState<Record<string, boolean>>(
-    {}
-  );
 
   useEffect(() => {
     if (isLoading) return; // wait until the context is loaded for prepopulation
@@ -117,13 +113,6 @@ const Form: React.FC = () => {
       return (
         <div key={`${fieldName}-${type}-input`}>
           <InputField type={type} {...commonProps} />
-          {field.checkbox && (
-            <CheckboxField
-              label={field.checkbox}
-              checked={checkboxStates[fieldName] || false}
-              {...register(fieldName, registerOptions)}
-            />
-          )}
         </div>
       );
     }
@@ -132,48 +121,9 @@ const Form: React.FC = () => {
       return (
         <div key={`${fieldName}-select-menu`}>
           <SelectField options={options || []} {...commonProps} />
-          {field.checkbox && (
-            <CheckboxField
-              label={field.checkbox}
-              checked={checkboxStates[fieldName] || false}
-              {...register(fieldName, registerOptions)}
-            />
-          )}
         </div>
       );
     }
-  };
-
-  const handleCheckboxChange = (name: string, isChecked: boolean) => {
-    console.log("name", name, "isChecked", isChecked);
-
-    setDisabledFields((prev) => {
-      const newSet = new Set(prev);
-      if (isChecked) {
-        newSet.add(name);
-        setValue(name, "", { shouldValidate: false });
-        unregister(name);
-        setValue(name, "", { shouldValidate: false });
-      } else {
-        newSet.delete(name);
-
-        setValue(name, "");
-        register(name);
-      }
-      return newSet;
-    });
-
-    if (isChecked) {
-      setAnswer(name, "", true);
-    } else {
-      setAnswer(name, "", false);
-    }
-
-    setCheckboxStates((prev) => ({
-      ...prev,
-      [name]: isChecked,
-    }));
-    console.log(getValues());
   };
 
   const handleFieldChange = async (
@@ -181,9 +131,6 @@ const Form: React.FC = () => {
     value: any,
     fieldType: string
   ) => {
-    if (fieldType === "checkbox") {
-      return handleCheckboxChange(name, value);
-    }
     const isValid = await trigger(name);
     setAnswer(name, value, isValid);
   };
@@ -196,7 +143,6 @@ const Form: React.FC = () => {
     );
 
     setDisabledFields(new Set());
-    setCheckboxStates({});
 
     for (const fieldName of currentSectionFields) {
       setValue(fieldName, "");
