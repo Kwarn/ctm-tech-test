@@ -23,9 +23,7 @@ const Form: React.FC = () => {
     trigger,
     clearErrors,
     setValue,
-    unregister,
     reset,
-    getValues,
   } = useForm<FormDataType>({
     mode: "onBlur",
     reValidateMode: "onChange",
@@ -97,11 +95,7 @@ const Form: React.FC = () => {
         onChange: (
           e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
         ) => {
-          const value =
-            (e.target as HTMLInputElement).type === "checkbox"
-              ? (e.target as HTMLInputElement).checked
-              : e.target.value;
-          handleFieldChange(fieldName, value, e.target.type);
+          handleFieldChange(fieldName, e.target.value);
           if (registerOptions.onChange) {
             registerOptions.onChange(e);
           }
@@ -129,7 +123,6 @@ const Form: React.FC = () => {
   const handleFieldChange = async (
     name: string,
     value: any,
-    fieldType: string
   ) => {
     const isValid = await trigger(name);
     setAnswer(name, value, isValid);
