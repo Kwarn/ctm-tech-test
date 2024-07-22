@@ -1,4 +1,4 @@
-import React, { forwardRef } from "react";
+import { forwardRef } from "react";
 import { FieldError, UseFormRegisterReturn } from "react-hook-form";
 
 interface CheckboxFieldProps {
@@ -11,12 +11,7 @@ interface CheckboxFieldProps {
 const CheckboxField = forwardRef<
   HTMLInputElement,
   CheckboxFieldProps & UseFormRegisterReturn
->(({ name, label, checked, error, onChange, onBlur, disableField }, ref) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (onChange) onChange(e);
-    if (disableField) disableField(e.target.checked);
-  };
-
+>(({ name, label, checked, error, onChange }, ref) => {
   return (
     <div>
       <label>
@@ -24,8 +19,7 @@ const CheckboxField = forwardRef<
           ref={ref}
           name={name}
           type="checkbox"
-          onBlur={onBlur}
-          onChange={handleChange}
+          onChange={onChange}
           checked={checked}
           className="mr-2"
         />

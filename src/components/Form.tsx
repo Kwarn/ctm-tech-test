@@ -25,8 +25,8 @@ const Form: React.FC = () => {
     clearErrors,
     setValue,
     unregister,
-    watch,
     reset,
+    getValues,
   } = useForm<FormDataType>({
     mode: "onBlur",
     reValidateMode: "onChange",
@@ -82,54 +82,35 @@ const Form: React.FC = () => {
     initializeForm();
   }, [isLoading]);
 
-  useEffect(() => {
-    const subscription = watch((values, { name }) => {
-      if (name) {
-        trigger(name).then((isValid) => {
-          /* 
-          this is triggered each time a form field value changes, it keeps the answers in context up to date
-          a side effect of this is its also triggered when we disable a field because we force the value to be an empty string
-
-          this validation check of an empty string causes isValid to be false when we want it to be true
-          we want it to be valid so the form can be submitted, the ProgressTracker updates and we have the correct payload (empty strings for disabled fields) - BE would handle this in theory
-          we need to check if the field is present in disabledFields and override isValid to true - however disabledFields is not ready in time so we need to delay this check
-
-          I'm aware this is a bit hacky, this is my first time using react-hook-form so I could be missing something.
-          I'm going to timebox this one to avoid a large refactor and delaying submitting of the test :)
-
-          We can discuss possible solutions/alternatives in the review?
-          */
-          setTimeout(() => {
-            if (disabledFields.has(name)) {
-              isValid = true;
-            }
-          }, 10);
-          setAnswer(name, values[name], isValid);
-        });
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [watch, setAnswer, trigger]);
-
-
   // handles rendering form fields based on the field type
-  const renderField = (field: FieldType, index: number) => {
+  const renderField = (field: FieldType) => {
     const { fieldName, label, element, type, options, rules, placeholder } =
       field;
 
     const error = errors[fieldName] as FieldError | undefined;
     const isDisabled = disabledFields.has(fieldName);
-    const registerOptions = !isDisabled ? rules ?? {} : {}; // dont apply rules if field is disabled
+    const registerOptions = rules ?? {};
 
     const commonProps = {
       label,
       error,
       disabled: isDisabled,
       placeholder: placeholder ?? "",
-      ...register(fieldName, registerOptions),
+      ...register(fieldName, {
+        ...registerOptions,
+        onChange: (
+          e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+        ) => {
+          const value =
+            (e.target as HTMLInputElement).type === "checkbox"
+              ? (e.target as HTMLInputElement).checked
+              : e.target.value;
+          handleFieldChange(fieldName, value, e.target.type);
+          if (registerOptions.onChange) {
+            registerOptions.onChange(e);
+          }
+        },
+      }),
     };
 
     if (element === "input") {
@@ -138,9 +119,6 @@ const Form: React.FC = () => {
           <InputField type={type} {...commonProps} />
           {field.checkbox && (
             <CheckboxField
-              disableField={(checked: boolean) =>
-                handleCheckboxChange(fieldName, checked)
-              }
               label={field.checkbox}
               checked={checkboxStates[fieldName] || false}
               {...register(fieldName, registerOptions)}
@@ -156,9 +134,6 @@ const Form: React.FC = () => {
           <SelectField options={options || []} {...commonProps} />
           {field.checkbox && (
             <CheckboxField
-              disableField={(checked: boolean) =>
-                handleCheckboxChange(fieldName, checked)
-              }
               label={field.checkbox}
               checked={checkboxStates[fieldName] || false}
               {...register(fieldName, registerOptions)}
@@ -169,45 +144,53 @@ const Form: React.FC = () => {
     }
   };
 
-  // checkboxes control the disabled state of their respective fields
-  // this function handles disabling/enabling fields based on the checkbox state
-  const handleCheckboxChange = async (
-    disableTarget: string,
-    isChecked: boolean
-  ) => {
-    setCheckboxStates((prev) => ({
-      ...prev,
-      [disableTarget]: isChecked,
-    }));
+  const handleCheckboxChange = (name: string, isChecked: boolean) => {
+    console.log("name", name, "isChecked", isChecked);
 
     setDisabledFields((prev) => {
       const newSet = new Set(prev);
       if (isChecked) {
-        newSet.add(disableTarget);
-
-        unregister(disableTarget);
-        setValue(disableTarget, "", {
-          shouldValidate: false,
-          shouldDirty: true,
-        });
-        clearErrors(disableTarget);
+        newSet.add(name);
+        setValue(name, "", { shouldValidate: false });
+        unregister(name);
+        setValue(name, "", { shouldValidate: false });
       } else {
-        newSet.delete(disableTarget);
+        newSet.delete(name);
 
-        setValue(disableTarget, "", {
-          shouldValidate: true,
-          shouldDirty: true,
-        });
-        clearErrors(disableTarget);
+        setValue(name, "");
+        register(name);
       }
       return newSet;
     });
+
+    if (isChecked) {
+      setAnswer(name, "", true);
+    } else {
+      setAnswer(name, "", false);
+    }
+
+    setCheckboxStates((prev) => ({
+      ...prev,
+      [name]: isChecked,
+    }));
+    console.log(getValues());
+  };
+
+  const handleFieldChange = async (
+    name: string,
+    value: any,
+    fieldType: string
+  ) => {
+    if (fieldType === "checkbox") {
+      return handleCheckboxChange(name, value);
+    }
+    const isValid = await trigger(name);
+    setAnswer(name, value, isValid);
   };
 
   const handleResetButton = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
 
-    // Collect the field names from the current section
     const currentSectionFields = sections[currentSection].fields.map(
       (field) => field.fieldName
     );
@@ -217,7 +200,10 @@ const Form: React.FC = () => {
 
     for (const fieldName of currentSectionFields) {
       setValue(fieldName, "");
+      setAnswer(fieldName, "", false);
     }
+
+    clearErrors();
   };
 
   const handleNextButton = async (
@@ -238,7 +224,10 @@ const Form: React.FC = () => {
   const onSubmit: SubmitHandler<FormDataType> = (data) => {
     alert(JSON.stringify(data));
 
+    console.log(data);
+
     // we would post the data to an API here in a try/catch aync/await block
+    // we could also inrementally submit the form per section if we wanted to
     // I'm just resetting the form for demo purposes
 
     const fieldNames: string[] = [];
@@ -271,9 +260,7 @@ const Form: React.FC = () => {
       >
         {sections.length > 0 && (
           <div className="space-y-6">
-            {sections[currentSection].fields.map((field, index) =>
-              renderField(field, index)
-            )}
+            {sections[currentSection].fields.map((field) => renderField(field))}
           </div>
         )}
 
